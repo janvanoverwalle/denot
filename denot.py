@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 from pathlib import Path
@@ -15,10 +16,10 @@ class Regex(object):
     FONT_COLOR_START = r'<font color=".*?">'
     FONT_COLOR_END = r'</font>'
     LINES = [
-        r'^(?:- |.*?: *)?\(?.*?\)$',
-        r'^(?:- |.*?: *)?\(.*?\)?$',
-        r'^(?:- |.*?: *)?\[?.*?\]$',
-        r'^(?:- |.*?: *)?\[.*?\]?$',
+        r'^(?:- |.*?: *)?\(?.*?\)(.*)?$',
+        r'^(?:- |.*?: *)?\(.*?\)?(.*)?$',
+        r'^(?:- |.*?: *)?\[?.*?\](.*)?$',
+        r'^(?:- |.*?: *)?\[.*?\]?(.*)?$',
         MUSIC
     ]
 
@@ -123,8 +124,11 @@ def process_file(file):
                 total_removed += 1
                 continue
 
+            tmp_line = s_line
             s_line = re.sub(Regex.FONT_COLOR_START, '', s_line, re.I)
             s_line = re.sub(Regex.FONT_COLOR_END, '', s_line, re.I)
+            if s_line != tmp_line:
+                total_removed += 1
 
             if re.match(Regex.AUTHOR, s_line, re.I) or re.match(Regex.SYNC, s_line, re.I):
                 skip_next_line = True
@@ -141,8 +145,12 @@ def process_file(file):
 
             skip = False
             for regex in Regex.LINES:
-                if re.match(regex, s_line, re.I):
-                    skip = True
+                match_obj = re.match(regex, s_line, re.I)
+                if match_obj:
+                    if len(match_obj.groups()) > 0:
+                        s_line = match_obj.group(1)
+                    else:
+                        skip = True
                     total_removed += 1
                     break
 
